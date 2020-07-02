@@ -13,6 +13,13 @@ var count = 0
 
 func main() {
 	port := os.Getenv("PORT")
+
+	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		// Better with a middleware
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// App logic (very basic)
 		count++
