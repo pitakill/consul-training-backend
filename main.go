@@ -9,10 +9,15 @@ import (
 	"strings"
 )
 
+const VERSION = "2.0.0"
+
 var count = 0
 
 func main() {
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
 		// Better with a middleware
@@ -26,8 +31,9 @@ func main() {
 
 		// Handle response
 		j, err := json.Marshal(struct {
-			Count int `json:"count"`
-		}{count})
+			Count   int    `json:"count"`
+			Version string `json:"version"`
+		}{count, VERSION})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
