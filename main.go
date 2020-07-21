@@ -20,9 +20,16 @@ func main() {
 	}
 
 	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
-		// Better with a middleware
+		j, err := json.Marshal(struct {
+			Success string `json:"success"`
+		}{"ok"})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.WriteHeader(http.StatusNoContent)
+		w.Write(j)
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
