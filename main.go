@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "3.0.0"
 const key = "key"
 
 func logic(client *redis.Client) (int, error) {
@@ -37,24 +38,15 @@ func logic(client *redis.Client) (int, error) {
 
 func healthcheck(w http.ResponseWriter, r *http.Request, client *redis.Client) {
 	log.Println(r)
+
 	if _, err := client.Ping(context.Background()).Result(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	j, err := json.Marshal(struct {
-		Success string `json:"success"`
-	}{"ok"})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
+	// Better with a middleware
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	if _, err := w.Write(j); err != nil {
-		log.Fatal(err)
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func root(w http.ResponseWriter, r *http.Request, client *redis.Client) {
@@ -83,10 +75,13 @@ func root(w http.ResponseWriter, r *http.Request, client *redis.Client) {
 }
 
 func main() {
+	redis_password := os.Getenv("REDIS_PASSWORD")
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
 	redis_host := os.Getenv("REDIS_HOST")
 	if redis_host == "" {
 		redis_host = "localhost"
@@ -94,10 +89,6 @@ func main() {
 	redis_port := os.Getenv("REDIS_PORT")
 	if redis_port == "" {
 		redis_port = "6379"
-	}
-	redis_password := os.Getenv("REDIS_PASSWORD")
-	if redis_password == "" {
-		redis_password = "holamundo"
 	}
 
 	rdb := redis.NewClient(&redis.Options{
@@ -109,6 +100,16 @@ func main() {
 	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) { healthcheck(w, r, rdb) })
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { root(w, r, rdb) })
+
+	ifaces, err := net.InterfaceAddrs()
+	if err != nil {
+		log.Println("Can't get the ifaces where is listening")
+	}
+
+	for _, iface := range ifaces {
+		ip := strings.Split(iface.String(), "/")
+		log.Printf("Listening on: %s:%s", ip[0], port)
+	}
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

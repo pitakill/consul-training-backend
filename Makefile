@@ -1,8 +1,11 @@
-.PHONY: create deploy all
+.PHONY: create deploy update-version all
 
 image = pitakill/consul-training-backend
 
-all: create deploy
+all: update-version create deploy
+
+update-version:
+	@echo -e "package main\n\nconst VERSION = \"$(version)\"" > version.go
 
 create:
 	docker build -t $(image):$(version) .
