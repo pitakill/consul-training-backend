@@ -58,11 +58,14 @@ func root(w http.ResponseWriter, r *http.Request, client *redis.Client) {
 		return
 	}
 
+	region := os.Getenv("NOMAD_REGION")
+
 	// Handle response
 	j, err := json.Marshal(struct {
 		Count   int    `json:"count"`
+		Region  string `json:"region"`
 		Version string `json:"version"`
-	}{count, VERSION})
+	}{count, region, VERSION})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
